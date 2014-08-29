@@ -16,28 +16,8 @@
 
 package arguments
 
-case class Cli(foo: Boolean = false, bar: Int = 0)
-
-class Arguments[T] private(val args: T, val remaining: List[String]) {
-  override def toString: String = args.toString
-}
+import scala.language.experimental.macros
 
 object Arguments {
-  def apply[T](args: Array[String])(implicit ev: T =:= Cli): Arguments[Cli] = {
-    case class Foo(cli: Cli, rem: List[String])
-    val parser = new scopt.OptionParser[Foo]("foo") {
-      override val showUsageOnError = false
-
-      opt[Unit]("foo") action { (x, c) ⇒
-        c.copy(cli = c.cli.copy(foo = true))
-      }
-      arg[String]("remainder") optional() unbounded() action { (x, c) ⇒
-        c.copy(rem = c.rem :+ x)
-      }
-    }
-    parser.parse(args, Foo(Cli(), List())) match {
-      case Some(x) ⇒ new Arguments(x.cli, x.rem)
-      case None    ⇒ throw new IllegalArgumentException()
-    }
-  }
+  def apply[A](args: Array[String]): ParseResult[A] = macro ParseMacro.parse[A]
 }

@@ -16,30 +16,6 @@
 
 package arguments
 
-import org.scalatest._
-
-class ArgumentsSpec extends FunSuite {
-  import arguments.provider.scopt
-
-  case class Cli(foo: Boolean = false)
-  implicit val emptyCli = new Empty[Cli] {
-    def empty: Cli = Cli()
-  }
-
-  test("undefined parameters") {
-    intercept[IllegalArgumentException] {
-      Arguments[Cli](Array("--bar"))
-    }
-  }
-
-  test("remaining parameters") {
-    val args = Arguments[Cli](Array("foo", "bar"))
-    assert(args.remaining == List("foo", "bar"))
-  }
-
-  test("boolean parameters") {
-    assert(Arguments[Cli](Array("--foo")).args.foo)
-    assert(!Arguments[Cli](Array()).args.foo)
-  }
-
+trait Empty[A] {
+  def empty: A
 }
