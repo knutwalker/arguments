@@ -27,4 +27,10 @@ object Reader {
 
   implicit val int = reads(_.toInt)
   implicit val string = reads(identity)
+  implicit val double = reads(_.toDouble)
+  implicit val long = reads(_.toLong)
+  implicit val bigInt = reads(BigInt(_))
+  implicit val bigDecimal = reads(BigDecimal(_))
+  implicit val file = reads(new java.io.File(_))
+  implicit val uri = reads(new java.net.URI(_))
 }
