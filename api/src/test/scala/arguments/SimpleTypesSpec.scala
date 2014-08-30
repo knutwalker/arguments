@@ -16,18 +16,32 @@
 
 package arguments
 
-class ArgumentsSpec extends ArgsSpec {
+class SimpleTypesSpec extends ArgsSpec {
 
-  case class Cli()
+  case class Cli(foo: String = "", bar: Int = 42)
 
-  test("undefined parameters") {
+  test("string parsing") {
+    val result = Arguments(Cli())(Array("--foo", "bar"))
+    assert(result.args.foo == "bar")
+    assert(result.remaining.isEmpty)
+  }
+
+  test("int parsing") {
+    val result = Arguments(Cli())(Array("--bar", "1337"))
+    assert(result.args.bar == 1337)
+    assert(result.remaining.isEmpty)
+  }
+
+  test("malformed int") {
     intercept[IllegalArgumentException] {
-      Arguments(Cli())(Array("--bar"))
+      Arguments(Cli())(Array("--bar", "foo"))
     }
   }
 
-  test("remaining parameters") {
-    val args = Arguments(Cli())(Array("foo", "bar"))
-    assert(args.remaining == List("foo", "bar"))
+  test("defaults") {
+    val result = Arguments(Cli())(Array())
+    assert(result.args.foo == "")
+    assert(result.args.bar == 42)
   }
+
 }

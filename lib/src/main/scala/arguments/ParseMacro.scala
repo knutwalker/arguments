@@ -22,8 +22,37 @@ import scala.reflect.macros.blackbox
 
 object ParseMacro {
 
-  def parse[A: c.WeakTypeTag](c: blackbox.Context)(args: c.Expr[Array[String]]): c.Tree = {
+  def parse[A: c.WeakTypeTag](c: blackbox.Context)(empty: c.Expr[A])(args: c.Expr[Array[String]]): c.Tree = {
     import c.universe._
+
+    object Argument {
+      val apply: PartialFunction[MethodSymbol, Argument] = {
+        case m if m.returnType =:= typeOf[Boolean] ⇒ new BoolArgument(m)
+        case m ⇒ new SimpleArgument(m)
+      }
+    }
+    abstract class Argument(val param: TermSymbol) {
+      def tree(parser: TermName, isDefault: Boolean): c.Tree
+    }
+
+    final class BoolArgument(param: TermSymbol) extends Argument(param) {
+      def tree(parser: TermName, isDefault: Boolean): c.Tree = {
+        val action = q"""(_.copy(${param.name} = true))"""
+        q"""
+        $parser.bool(${param.name.decodedName.toString}, ${!isDefault}, $action)
+        """
+      }
+    }
+
+    final class SimpleArgument(param: MethodSymbol) extends Argument(param) {
+      def tree(parser: TermName, isDefault: Boolean): c.Tree = {
+        val tpe = param.returnType
+        val action = q"""((v, c) => c.copy(${param.name} = v))"""
+        q"""
+        $parser.simple[$tpe](${param.name.decodedName.toString}, ${!isDefault}, $action)
+        """
+      }
+    }
 
     def fail(msg: String) =
       c.abort(c.enclosingPosition, "\n" + msg)
@@ -43,13 +72,6 @@ object ParseMacro {
       }
     }
 
-    def boolTree(m: MethodSymbol, default: Boolean, parser: TermName) = {
-      val action = q"""(_.copy(${m.name} = true))"""
-      q"""
-      $parser.bool(${m.name.decodedName.toString}, ${!default}, $action)
-      """
-    }
-
     def lookup(tc: Type) = {
       val empty = c.inferImplicitValue(tc)
       if (empty == EmptyTree) {
@@ -58,32 +80,31 @@ object ParseMacro {
       empty
     }
 
-    def generate(tpe: Type, emptyTpe: Type, providerTpe: Type): c.Tree = {
+//    def hkLookup(tcCtor: Type, t: Type) = {
+//      val tpe = appliedType(tcCtor, t :: Nil)
+//      lookup(tpe)
+//    }
+
+    def generate(tpe: Type, providerTpe: Type): c.Tree = {
       if (!tpe.typeSymbol.isClass) {
         fail(tpe + "is not a class")
       }
-      val empty = lookup(emptyTpe)
       val provider = lookup(providerTpe)
-      val arguments = caseAccessors(tpe)
       val isDefault = defaultChecker(tpe.typeSymbol.asClass)
+      val arguments = caseAccessors(tpe) collect Argument.apply
       val parser = c.freshName(TermName("parser"))
-
-      val trees = arguments collect {
-        case m if m.returnType =:= typeOf[Boolean] ⇒
-          boolTree(m, isDefault(m), parser)
-      }
+      val trees = arguments.map(a ⇒ a.tree(parser, isDefault(a.param)))
 
       q"""
           val $parser = $provider[$tpe]
           ..$trees
-          $parser($args, $empty.empty)
+          $parser($args, $empty)
       """
     }
 
-    def runMacro(implicit tcTpe: WeakTypeTag[Empty[A]], pTpe: WeakTypeTag[ParserProvider]): c.Tree = {
+    def runMacro(implicit pTpe: WeakTypeTag[ParserProvider]): c.Tree = {
       val tpe = weakTypeOf[A]
-      val tc = appliedType(tcTpe.tpe, tpe :: Nil)
-      val generated = generate(tpe, tc, pTpe.tpe)
+      val generated = generate(tpe, pTpe.tpe)
       c.info(c.enclosingPosition, "Generated code: \n\n" + showCode(generated), force = false)
       generated
     }

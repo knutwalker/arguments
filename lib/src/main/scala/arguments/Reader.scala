@@ -16,11 +16,15 @@
 
 package arguments
 
-trait Parser[A] {
 
-  def bool(name: String, required: Boolean, f: A ⇒ A): Unit
+trait Reader[T] {
+  def read(x: String): T
+}
+object Reader {
+  def reads[A](f: String ⇒ A): Reader[A] = new Reader[A] {
+    def read(x: String): A = f(x)
+  }
 
-  def simple[B: Reader](name: String, required: Boolean, f: (B, A) ⇒ A): Unit
-
-  def apply(args: Array[String], empty: A): ParseResult[A]
+  implicit val int = reads(_.toInt)
+  implicit val string = reads(identity)
 }

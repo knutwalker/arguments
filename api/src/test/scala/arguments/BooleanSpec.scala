@@ -16,11 +16,20 @@
 
 package arguments
 
-trait Parser[A] {
+class BooleanSpec extends ArgsSpec {
 
-  def bool(name: String, required: Boolean, f: A ⇒ A): Unit
+  case class Cli(foo: Boolean = false)
 
-  def simple[B: Reader](name: String, required: Boolean, f: (B, A) ⇒ A): Unit
+  test("boolean parameters") {
+    val result = Arguments(Cli())(Array("--foo"))
+    assert(result.args.foo)
+    assert(result.remaining.isEmpty)
+  }
 
-  def apply(args: Array[String], empty: A): ParseResult[A]
+  test("boolean default params") {
+    assert(!Arguments(Cli())(Array()).args.foo)
+
+    case class Cli2(foo: Boolean = true)
+    assert(Arguments(Cli2())(Array()).args.foo)
+  }
 }

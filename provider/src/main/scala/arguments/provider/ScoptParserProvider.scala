@@ -16,8 +16,9 @@
 
 package arguments.provider
 
-import arguments.{Parser, ParserProvider, ParseResult}
+import arguments.{Reader, Parser, ParserProvider, ParseResult}
 import _root_.scopt.OptionParser
+import _root_.scopt.Read
 
 trait ScoptParserProvider {
 
@@ -32,9 +33,15 @@ trait ScoptParserProvider {
       }
 
     def bool(name: String, required: Boolean, f: (A) ⇒ A): Unit = {
-      val o1 = parser.opt[Unit](name)
-      val o2 = if (required) o1.required() else o1.optional()
-      o2.action((_, pr) ⇒ pr.copy(args = f(pr.args)))
+      val o = parser.opt[Unit](name)
+      if (required) o.required() else o.optional()
+      o.action((_, pr) ⇒ pr.copy(args = f(pr.args)))
+    }
+
+    def simple[B](name: String, required: Boolean, f: (B, A) ⇒ A)(implicit B: Reader[B]): Unit = {
+      val o = parser.opt[B](name)(Read.reads(B.read))
+      if (required) o.required() else o.optional()
+      o.action((x, pr) ⇒ pr.copy(args = f(x, pr.args)))
     }
 
     def apply(args: Array[String], empty: A): ParseResult[A] = {
@@ -48,6 +55,6 @@ trait ScoptParserProvider {
     }
   }
 
-  implicit def scopt: ParserProvider = new ScoptParserProvider
+  implicit val scopt: ParserProvider = new ScoptParserProvider
 }
 

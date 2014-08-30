@@ -19,5 +19,5 @@ package arguments
 import scala.language.experimental.macros
 
 object Arguments {
-  def apply[A](args: Array[String]): ParseResult[A] = macro ParseMacro.parse[A]
+  def apply[A](empty: A)(args: Array[String]): ParseResult[A] = macro ParseMacro.parse[A]
 }

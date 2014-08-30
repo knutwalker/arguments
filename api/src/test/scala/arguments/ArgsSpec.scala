@@ -16,6 +16,7 @@
 
 package arguments
 
-trait Empty[A] {
-  def empty: A
-}
+import arguments.provider.ScoptParserProvider
+import org.scalatest.FunSuite
+
+trait ArgsSpec extends FunSuite with ScoptParserProvider
