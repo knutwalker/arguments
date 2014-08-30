@@ -52,14 +52,14 @@ by applying some rules and conventions. The rest is done by a macro.
 - all parameters are mandatory
 - the name of a parameter names serve as options long name or its base name
 - the type of a parameter determines how it is translated/parsed
--- boolean parameters result in a `--{name}` and a `--no-{name}` flag
--- string and numeric parameters result in a `--{name} {arg}` option
--- java.io.File parameters result in a `--{name} {arg}` option (same as string, really)
--- scala.concurrent.duration.Duration parameters result in a `--{name} {arg}` option, where the `{arg}` is parsed by the Duration constructor
--- List[_] parameter allow for repetition
--- default values allow for optional parameters
--- types that extend AnyVal are treated as value classes, that is their value type determines the result
--- case types introduce groups. their parameters are interpreted recursively, but their names are joined with the name of the case parameters by a `-`
+ - boolean parameters result in a `--{name}` and a `--no-{name}` flag
+ - string and numeric parameters result in a `--{name} {arg}` option
+ - java.io.File parameters result in a `--{name} {arg}` option (same as string, really)
+ - scala.concurrent.duration.Duration parameters result in a `--{name} {arg}` option, where the `{arg}` is parsed by the Duration constructor
+ - List[_] parameter allow for repetition
+ - default values allow for optional parameters
+ - types that extend AnyVal are treated as value classes, that is their value type determines the result
+ - case types introduce groups. their parameters are interpreted recursively, but their names are joined with the name of the case parameters by a `-`
 
 ### TODO
 
