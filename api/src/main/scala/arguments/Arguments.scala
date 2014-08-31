@@ -20,6 +20,8 @@ import scala.language.experimental.macros
 import scala.util.Try
 
 object Arguments {
-  def apply[A](args: Array[String]): Try[ParseResult[A]] = macro ParseMacro.parse[A]
-  def usage[A]: String = macro UsageMacro.usage[A]
+  def apply[A](args: Array[String]): Try[ParseResult[A]] = macro ArgumentsMacro.parse[A]
+  def usage[A]: String = macro ArgumentsMacro.usage[A]
+  def applyDebug[A](args: Array[String]): Try[ParseResult[A]] = macro ArgumentsMacro.parseDebug[A]
+  def usageDebug[A]: String = macro ArgumentsMacro.usageDebug[A]
 }
