@@ -53,4 +53,22 @@ class ArgumentsSpec extends ArgsSpec {
     }
     assert(ex.getMessage == "foo is missing")
   }
+
+  case class Cli14(
+    foo: String, bar: Int = 42, baz: Double = 13.37, qux: Long = 314L,
+    qax: BigInt = BigInt(1), crux: BigDecimal = BigDecimal(0.9))
+
+  test("usage") {
+    val usage = Arguments.usage[Cli14]
+    val expected =
+      """usage
+        |  --foo  [String] (required)
+        |  --bar  [Int] (default: 42)
+        |  --baz  [Double] (default: 13.37)
+        |  --qux  [Long] (default: 314)
+        |  --qax  [BigInt] (default: 1)
+        |  --crux  [BigDecimal] (default: 0.9)
+        |""".stripMargin
+    assert(usage == expected)
+  }
 }
