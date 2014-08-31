@@ -65,9 +65,9 @@ by applying some rules and conventions. The rest is done by a macro.
 
 ### TODO
 
-- conflict resulution
+- conflict resolution
 - short names
-- backends
+- different parsing back-ends
 
 ## License
 

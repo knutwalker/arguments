@@ -22,12 +22,12 @@ class ArgumentsSpec extends ArgsSpec {
 
   test("undefined parameters") {
     intercept[IllegalArgumentException] {
-      Arguments(Cli())(Array("--bar"))
+      Arguments[Cli](Array("--bar"))
     }
   }
 
   test("remaining parameters") {
-    val args = Arguments(Cli())(Array("foo", "bar"))
+    val args = Arguments[Cli](Array("foo", "bar"))
     assert(args.remaining == List("foo", "bar"))
   }
 }

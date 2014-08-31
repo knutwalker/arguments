@@ -18,9 +18,9 @@ package arguments
 
 trait Parser[A] {
 
-  def bool(name: String, required: Boolean, f: A ⇒ A): Unit
+  def bool(name: String, f: A ⇒ A): Unit
 
-  def simple[B: Reader](name: String, required: Boolean, f: (B, A) ⇒ A): Unit
+  def simple[B: Reader](name: String, f: (B, A) ⇒ A): Unit
 
   def apply(args: Array[String], empty: A): ParseResult[A]
 }

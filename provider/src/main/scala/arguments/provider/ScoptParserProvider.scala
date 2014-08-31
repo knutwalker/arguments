@@ -32,16 +32,12 @@ trait ScoptParserProvider {
         override val showUsageOnError = false
       }
 
-    def bool(name: String, required: Boolean, f: (A) ⇒ A): Unit = {
-      val o = parser.opt[Unit](name)
-      if (required) o.required() else o.optional()
-      o.action((_, pr) ⇒ pr.copy(args = f(pr.args)))
+    def bool(name: String, f: (A) ⇒ A): Unit = {
+      parser.opt[Unit](name) optional() action((_, pr) ⇒ pr.copy(args = f(pr.args)))
     }
 
-    def simple[B](name: String, required: Boolean, f: (B, A) ⇒ A)(implicit B: Reader[B]): Unit = {
-      val o = parser.opt[B](name)(Read.reads(B.read))
-      if (required) o.required() else o.optional()
-      o.action((x, pr) ⇒ pr.copy(args = f(x, pr.args)))
+    def simple[B](name: String, f: (B, A) ⇒ A)(implicit B: Reader[B]): Unit = {
+      parser.opt[B](name)(Read.reads(B.read)) optional() action((x, pr) ⇒ pr.copy(args = f(x, pr.args)))
     }
 
     def apply(args: Array[String], empty: A): ParseResult[A] = {
