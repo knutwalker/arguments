@@ -18,11 +18,12 @@ package arguments
 
 import scala.language.higherKinds
 import scala.reflect.macros.blackbox
+import scala.util.{Try ⇒ UTry}
 
 
 object ParseMacro {
 
-  def parse[A: c.WeakTypeTag](c: blackbox.Context)(args: c.Expr[Array[String]]): c.Expr[ParseResult[A]] = {
+  def parse[A: c.WeakTypeTag](c: blackbox.Context)(args: c.Expr[Array[String]]): c.Expr[UTry[ParseResult[A]]] = {
     import c.universe._
 
     object Argument {
@@ -103,35 +104,6 @@ object ParseMacro {
         }.toMap
       }
 
-//      def collectFromLocal = {
-//        //      private def collectDefaults(tpe: Type, methods: List[TermSymbol], values: List[TermSymbol]) = {
-//        //        @tailrec
-//        //        def loop(defaults: List[TermSymbol], values: List[TermSymbol], result: List[(String, c.Tree)]): List[(String, c.Tree)] = defaults match {
-//        //          case df :: rest if df.isParamWithDefault ⇒
-//        //            values match {
-//        //              case vl :: restValues if vl.isParamWithDefault ⇒
-//        //                val tpeApplication = q"${tpe.typeSymbol.asClass}.${df.asTerm.name}"
-//        //                loop(rest, restValues, (vl.name.decodedName.toString, tpeApplication) :: result)
-//        //              case vl :: restValues ⇒
-//        //                loop(defaults, restValues, result)
-//        //              case _ ⇒ result
-//        //            }
-//        //          case df :: rest ⇒
-//        //            loop(rest, values, result)
-//        //          case _ ⇒
-//        //            result
-//        //        }
-//        //
-//        //        loop(methods, values, List()).toMap
-//        //      }
-//        info.values.zipWithIndex.collect {
-//          case (m, i) if m.isParamWithDefault ⇒
-//            val name = m.name.decodedName.toString
-//            val getter = TermName("copy$default$" + (i + 1))
-//            name → q"${info.tpe.typeSymbol}.$getter"
-//        }.toMap
-//      }
-
       private def mockType(tpe: Type, optTpes: List[(TermName, Type)], defaults: Map[String, c.Tree]) = {
         val tpeName = c.freshName(tpe.typeSymbol.name.toTypeName)
         val defs = defaults.mapValues(t ⇒ q"Some($t)").withDefault(_ ⇒ q"None")
@@ -177,7 +149,7 @@ object ParseMacro {
       }
     }
 
-    def runMacro(implicit pTpe: WeakTypeTag[ParserProvider]): c.Expr[ParseResult[A]] = {
+    def runMacro(implicit pTpe: WeakTypeTag[ParserProvider]): c.Expr[UTry[ParseResult[A]]] = {
       val tpe = weakTypeOf[A]
       if (!tpe.typeSymbol.isClass) {
         Utils.fail(tpe + "is not a class")
@@ -187,7 +159,7 @@ object ParseMacro {
       }
       val generated = generate(tpe, pTpe.tpe)
 //      Utils.printTree(generated, "Generated code: \n\n")
-      c.Expr[ParseResult[A]](generated)
+      c.Expr[UTry[ParseResult[A]]](generated)
     }
 
     def generate(tpe: Type, providerTpe: Type) = {
@@ -202,15 +174,19 @@ object ParseMacro {
           ${mock.cls}
           val ${FreshNames.parser} = $provider[${mock.tpe}]
           ..$trees
-          val ${FreshNames.parseResult} = ${FreshNames.parser}($args, ${mock.empty})
-          arguments.ParseResult($inst, ${FreshNames.parseResult}.remaining)
+          scala.util.Try {
+            val ${FreshNames.parseResult} = ${FreshNames.parser}($args, ${mock.empty})
+            arguments.ParseResult($inst, ${FreshNames.parseResult}.remaining)
+          }
         }
       """
     }
 
     def newInstance(info: TypeInformation) = {
       val params = info.values.map { v ⇒
-        AssignOrNamedArg(Ident(v.name), q"${FreshNames.parseResult}.args.${v.name}.get")
+        val exMessage = v.name.decodedName.toString + " is missing"
+        AssignOrNamedArg(Ident(v.name),
+          q"""${FreshNames.parseResult}.args.${v.name}.getOrElse(throw new IllegalArgumentException($exMessage))""")
       }
       q"new ${info.tpe}(..$params)"
     }

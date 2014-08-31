@@ -16,18 +16,41 @@
 
 package arguments
 
+import scala.util.Success
+
 class ArgumentsSpec extends ArgsSpec {
 
   case class Cli()
 
   test("undefined parameters") {
     intercept[IllegalArgumentException] {
-      Arguments[Cli](Array("--bar"))
+      Arguments[Cli](Array("--bar")).get
     }
   }
 
   test("remaining parameters") {
-    val args = Arguments[Cli](Array("foo", "bar"))
-    assert(args.remaining == List("foo", "bar"))
+    val Success(result) = Arguments[Cli](Array("foo", "bar"))
+    assert(result.remaining == List("foo", "bar"))
+  }
+
+  case class Cli2(foo: String = "foo")
+
+  test("default values get applied") {
+    val Success(result) = Arguments[Cli2](Array())
+    assert(result.args.foo == "foo")
+  }
+
+  test("command line args precede default values") {
+    val Success(result) = Arguments[Cli2](Array("--foo", "bar"))
+    assert(result.args.foo == "bar")
+  }
+
+  case class Cli3(foo: String)
+
+  test("missing defaults make argument mandatory") {
+    val ex = intercept[IllegalArgumentException] {
+      Arguments[Cli3](Array()).get
+    }
+    assert(ex.getMessage == "foo is missing")
   }
 }

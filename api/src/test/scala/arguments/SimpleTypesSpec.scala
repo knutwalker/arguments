@@ -19,18 +19,20 @@ package arguments
 import java.io.File
 import java.net.URI
 
+import scala.util.Success
+
 class SimpleTypesSpec extends ArgsSpec {
 
   case class Cli(foo: String = "")
   test("string parsing") {
-    val result = Arguments[Cli](Array("--foo", "bar"))
+    val Success(result) = Arguments[Cli](Array("--foo", "bar"))
     assert(result.args.foo == "bar")
     assert(result.remaining.isEmpty)
   }
 
   case class Cli2(foo: Int = 42)
   test("int parsing") {
-    val result = Arguments[Cli2](Array("--foo", "1337"))
+    val Success(result) = Arguments[Cli2](Array("--foo", "1337"))
     assert(result.args.foo == 1337)
     assert(result.remaining.isEmpty)
   }
@@ -38,13 +40,13 @@ class SimpleTypesSpec extends ArgsSpec {
   case class Cli3(foo: Int = 42)
   test("malformed int") {
     intercept[IllegalArgumentException] {
-      Arguments[Cli3](Array("--foo", "foo"))
+      Arguments[Cli3](Array("--foo", "foo")).get
     }
   }
 
   case class Cli4(foo: Double = 13.37)
   test("double parsing") {
-    val result = Arguments[Cli4](Array("--foo", "42"))
+    val Success(result) = Arguments[Cli4](Array("--foo", "42"))
     assert(result.args.foo == 42.0)
     assert(result.remaining.isEmpty)
   }
@@ -52,13 +54,13 @@ class SimpleTypesSpec extends ArgsSpec {
   case class Cli5(foo: Double = 13.37)
   test("malformed double") {
     intercept[IllegalArgumentException] {
-      Arguments[Cli5](Array("--foo", "foo"))
+      Arguments[Cli5](Array("--foo", "foo")).get
     }
   }
 
   case class Cli6(foo: Long = 314L)
   test("long parsing") {
-    val result = Arguments[Cli6](Array("--foo", "628"))
+    val Success(result) = Arguments[Cli6](Array("--foo", "628"))
     assert(result.args.foo == 628)
     assert(result.remaining.isEmpty)
   }
@@ -66,13 +68,13 @@ class SimpleTypesSpec extends ArgsSpec {
   case class Cli7(foo: Long = 314L)
   test("malformed long") {
     intercept[IllegalArgumentException] {
-      Arguments[Cli7](Array("--foo", "foo"))
+      Arguments[Cli7](Array("--foo", "foo")).get
     }
   }
 
   case class Cli8(foo: BigInt = BigInt(1))
   test("bigint parsing") {
-    val result = Arguments[Cli8](Array("--foo", "12"))
+    val Success(result) = Arguments[Cli8](Array("--foo", "12"))
     assert(result.args.foo == BigInt(12))
     assert(result.remaining.isEmpty)
   }
@@ -80,13 +82,13 @@ class SimpleTypesSpec extends ArgsSpec {
   case class Cli9(foo: BigInt = BigInt(1))
   test("malformed bigint") {
     intercept[IllegalArgumentException] {
-      Arguments[Cli9](Array("--foo", "foo"))
+      Arguments[Cli9](Array("--foo", "foo")).get
     }
   }
 
   case class Cli10(foo: BigDecimal = BigDecimal(0.9))
   test("bigdecimal parsing") {
-    val result = Arguments[Cli10](Array("--foo", "34.56"))
+    val Success(result) = Arguments[Cli10](Array("--foo", "34.56"))
     assert(result.args.foo == BigDecimal(34.56))
     assert(result.remaining.isEmpty)
   }
@@ -94,21 +96,21 @@ class SimpleTypesSpec extends ArgsSpec {
   case class Cli11(foo: BigDecimal = BigDecimal(0.9))
   test("malformed bigdecimal") {
     intercept[IllegalArgumentException] {
-      Arguments[Cli11](Array("--foo", "foo"))
+      Arguments[Cli11](Array("--foo", "foo")).get
     }
   }
 
   case class Cli12(foo: File = new File(""))
   test("file parsing") {
-    val result = Arguments[Cli12](Array("--foo", "/a/b/c"))
+    val Success(result) = Arguments[Cli12](Array("--foo", "/a/b/c"))
     assert(result.args.foo.getPath == "/a/b/c")
     assert(result.remaining.isEmpty)
   }
 
   case class Cli13(foo: URI = new URI(""))
   test("uri parsing") {
-    val result = Arguments[Cli13](
-      Array("--foo", "foo.bar://bernd@12.34.56.78:9876/a/b/c?foo=bar&baz=qux#baz"))
+    val Success(result) =
+      Arguments[Cli13](Array("--foo", "foo.bar://bernd@12.34.56.78:9876/a/b/c?foo=bar&baz=qux#baz"))
     assert(result.args.foo.getScheme == "foo.bar")
     assert(result.args.foo.getAuthority == "bernd@12.34.56.78:9876")
     assert(result.args.foo.getUserInfo == "bernd")
@@ -124,7 +126,7 @@ class SimpleTypesSpec extends ArgsSpec {
     foo: String = "", bar: Int = 42, baz: Double = 13.37, qux: Long = 314L,
     qax: BigInt = BigInt(1), crux: BigDecimal = BigDecimal(0.9))
   test("defaults") {
-    val result = Arguments[Cli14](Array())
+    val Success(result) = Arguments[Cli14](Array())
     assert(result.args.foo == "")
     assert(result.args.bar == 42)
     assert(result.args.baz == 13.37)

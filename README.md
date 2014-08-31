@@ -22,6 +22,7 @@ Arguments is yet to be coded, it's just an idea for now.
 ```scala
 import java.io.File
 import scala.concurrent.duration.Duration
+import scala.util.Try
 import arguments._
 
 case class Job(target: File) extends AnyVal
@@ -29,15 +30,15 @@ case class Server(host: String = "localhost", port: Int = 8080)
 case class Cli(name: String, jobs: List[Job], timeout: Duration, server: Server)
 
 object Main extends App {
-  val cli: Cli = Arguments[Cli](args)
+  val cli: Try[ParseResult[Cli]] = Arguments[Cli](args)
   println(cli)
 }
 ```
 
 
 ```
-./foo --name bar --server-host '12.34.56.78' --job /foo/bar --job /bar/baz --timeout 60s
-Cli(bar, List(Job(/foo/bar), Job(/bar/baz)), 60 seconds, Server(12.34.56.78, 8080))
+./foo --name bar --server-host '12.34.56.78' --job /foo/bar --job /bar/baz --timeout 60s baz qux
+Success(ParseResult(Cli(bar, List(Job(/foo/bar), Job(/bar/baz)), 60 seconds, Server(12.34.56.78, 8080)), List(baz, qux)))
 ```
 
 ### In depth usage
@@ -65,7 +66,6 @@ by applying some rules and conventions. The rest is done by a macro.
 
 ### TODO
 
-- conflict resolution
 - short names
 - different parsing back-ends
 

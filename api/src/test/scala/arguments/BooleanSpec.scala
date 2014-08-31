@@ -16,19 +16,21 @@
 
 package arguments
 
+import scala.util.Success
+
 class BooleanSpec extends ArgsSpec {
 
   case class Cli(foo: Boolean = false)
   case class Cli2(foo: Boolean = true)
 
   test("boolean parameters") {
-    val result = Arguments[Cli](Array("--foo"))
+    val Success(result) = Arguments[Cli](Array("--foo"))
     assert(result.args.foo)
     assert(result.remaining.isEmpty)
   }
 
   test("boolean default params") {
-    assert(!Arguments[Cli](Array()).args.foo)
-    assert(Arguments[Cli2](Array()).args.foo)
+    assert(!Arguments[Cli](Array()).get.args.foo)
+    assert(Arguments[Cli2](Array()).get.args.foo)
   }
 }
