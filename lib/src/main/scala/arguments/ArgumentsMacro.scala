@@ -175,14 +175,6 @@ class ArgumentsMacro(val c: blackbox.Context) {
     def fail(msg: String): Nothing =
       c.abort(c.enclosingPosition, "\n" + msg)
 
-    def lookup(tc: Type): c.Tree = {
-      val value = c.inferImplicitValue(tc)
-      if (value == EmptyTree) {
-        fail("Missing implicit instance of " + tc)
-      }
-      value
-    }
-
     def printTree(
       t: c.Tree, label: String = "", printTypes: Boolean = false,
       printIds: Boolean = false, printOwners: Boolean = false,
@@ -218,7 +210,6 @@ class ArgumentsMacro(val c: blackbox.Context) {
 
   final class ParserDef[A: c.WeakTypeTag](providerTpe: Type, args: c.Expr[Array[String]], printGenerated: Boolean) extends MacroDef[A, UTry[ParseResult[A]]]("parser", printGenerated) {
     protected def code(info: TypeInformation): c.Tree = {
-      val provider = Utils.lookup(providerTpe)
       val mirror = MirrorClass(info)
       val trees = ParseTrees(info).trees(FreshNames.parser)
       val inst = newInstance(info)
@@ -226,7 +217,7 @@ class ArgumentsMacro(val c: blackbox.Context) {
       q"""
         {
           ${mirror.cls}
-          val ${FreshNames.parser} = $provider[${mirror.tpe}]
+          val ${FreshNames.parser} = implicitly[$providerTpe].apply[${mirror.tpe}]
           ..$trees
           scala.util.Try {
             val ${FreshNames.parseResult} = ${FreshNames.parser}($args, ${mirror.empty})
