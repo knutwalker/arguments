@@ -66,7 +66,7 @@ class ArgumentsMacro(val c: blackbox.Context) {
   }
   final class BoolArgument(param: TermSymbol) extends Argument(param) {
     def tree(parser: TermName): c.Tree = {
-      val action = q"""(_.copy(${param.name} = Some(true)))"""
+      val action = q"""((c) => c.copy(${param.name} = Some(true)))"""
       q"""
         $parser.bool(${param.name.decodedName.toString}, $action)
         """
@@ -120,11 +120,11 @@ class ArgumentsMacro(val c: blackbox.Context) {
       methods.filter(_.isCaseAccessor)
   }
 
-  object MockClass {
-    def apply(info: TypeInformation): MockClass = {
+  object MirrorClass {
+    def apply(info: TypeInformation): MirrorClass = {
       val optTpes = optParams(info.tpe, info.accessors)
       val defaultValues = collectDefaults(info)
-      mockType(info.tpe, optTpes, defaultValues)
+      mirrorType(info.tpe, optTpes, defaultValues)
     }
 
     private def optParams(tpe: Type, parameters: List[MethodSymbol]) = {
@@ -146,16 +146,16 @@ class ArgumentsMacro(val c: blackbox.Context) {
       }.toMap
     }
 
-    private def mockType(tpe: Type, optTpes: List[(TermName, Type)], defaults: Map[String, c.Tree]) = {
+    private def mirrorType(tpe: Type, optTpes: List[(TermName, Type)], defaults: Map[String, c.Tree]) = {
       val tpeName = c.freshName(tpe.typeSymbol.name.toTypeName)
       val defs = defaults.mapValues(t ⇒ q"Some($t)").withDefault(_ ⇒ q"None")
       val ccTps = optTpes map {
         case (name, t) ⇒ q"val $name: $t = ${defs(name.decodedName.toString)}"
       }
-      new MockClass(tpeName, defaults, ccTps)
+      new MirrorClass(tpeName, defaults, ccTps)
     }
   }
-  class MockClass(val name: TypeName, val defaults: Map[String, c.Tree], params: List[c.Tree]) {
+  class MirrorClass(val name: TypeName, val defaults: Map[String, c.Tree], params: List[c.Tree]) {
     val tpe: c.Tree = tq"$name"
     val cls: c.Tree = q"case class $name(..$params)"
     val empty: c.Tree = q"new $name()"
@@ -190,7 +190,7 @@ class ArgumentsMacro(val c: blackbox.Context) {
       c.info(c.enclosingPosition, label + showCode(t, printTypes, printIds, printOwners, printPositions, printRootPkg), force = false)
     }
 
-    def preflightCheck[A: c.WeakTypeTag]: Type = {
+    def preCheck[A: c.WeakTypeTag]: Type = {
       val tpe = weakTypeOf[A]
       if (!tpe.typeSymbol.isClass) {
         Utils.fail(tpe + "is not a class")
@@ -206,7 +206,7 @@ class ArgumentsMacro(val c: blackbox.Context) {
     protected def code(info: TypeInformation): c.Tree
 
     final def run: c.Expr[B] = {
-      val tpe = Utils.preflightCheck[A]
+      val tpe = Utils.preCheck[A]
       val tpeInfo = TypeInformation(tpe)
       val generated = code(tpeInfo)
       if (printGenerated) {
@@ -219,17 +219,17 @@ class ArgumentsMacro(val c: blackbox.Context) {
   final class ParserDef[A: c.WeakTypeTag](providerTpe: Type, args: c.Expr[Array[String]], printGenerated: Boolean) extends MacroDef[A, UTry[ParseResult[A]]]("parser", printGenerated) {
     protected def code(info: TypeInformation): c.Tree = {
       val provider = Utils.lookup(providerTpe)
-      val mock = MockClass(info)
+      val mirror = MirrorClass(info)
       val trees = ParseTrees(info).trees(FreshNames.parser)
       val inst = newInstance(info)
 
       q"""
         {
-          ${mock.cls}
-          val ${FreshNames.parser} = $provider[${mock.tpe}]
+          ${mirror.cls}
+          val ${FreshNames.parser} = $provider[${mirror.tpe}]
           ..$trees
           scala.util.Try {
-            val ${FreshNames.parseResult} = ${FreshNames.parser}($args, ${mock.empty})
+            val ${FreshNames.parseResult} = ${FreshNames.parser}($args, ${mirror.empty})
             arguments.ParseResult($inst, ${FreshNames.parseResult}.remaining)
           }
         }
@@ -248,8 +248,8 @@ class ArgumentsMacro(val c: blackbox.Context) {
 
   final class UsageDef[A: c.WeakTypeTag](printGenerated: Boolean) extends MacroDef[A, String]("usage", printGenerated) {
     protected def code(info: TypeInformation): c.Tree = {
-      val mock = MockClass(info)
-      val defaults = mock.defaults
+      val mirror = MirrorClass(info)
+      val defaults = mirror.defaults
       val arguments = info.accessors collect Argument.find
       val trees = arguments.map(a ⇒ a.usage(FreshNames.builder, defaults.get(a.name)))
 
