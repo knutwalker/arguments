@@ -53,16 +53,16 @@ by applying some rules and conventions. The rest is done by a macro.
 - all parameters are mandatory
 - the name of a parameter names serve as options long name or its base name
 - the type of a parameter determines how it is translated/parsed
--- boolean parameters result in a `--{name}` flag, that can be left out
--- string and numeric parameters result in a `--{name} {arg}` option
--- java.io.File and java.net.URI parameters result in a `--{name} {arg}` option (same as string, really)
--- scala.concurrent.duration.Duration parameters result in a `--{name} {arg}` option, where the `{arg}` is parsed by the Duration constructor
--- Pairs (Tuple2) result in a `--{name} {key}={value}` option
--- List[_] parameter allow for repetition
--- Map[_, _] parameter act like repetition of pairs
--- default values allow for optional parameters
--- types that extend AnyVal are treated as value classes, that is their value type determines the result
--- case types introduce groups. their parameters are interpreted recursively, but their names are joined with the name of the case parameters by a `-`
+  - boolean parameters result in a `--{name}` flag, that can be left out
+  - string and numeric parameters result in a `--{name} {arg}` option
+  - java.io.File and java.net.URI parameters result in a `--{name} {arg}` option (same as string, really)
+  - scala.concurrent.duration.Duration parameters result in a `--{name} {arg}` option, where the `{arg}` is parsed by the Duration constructor
+  - Pairs (Tuple2) result in a `--{name} {key}={value}` option
+  - List[_] parameter allow for repetition
+  - Map[_, _] parameter act like repetition of pairs
+  - default values allow for optional parameters
+  - types that extend AnyVal are treated as value classes, that is their value type determines the result
+  - case types introduce groups. their parameters are interpreted recursively, but their names are joined with the name of the case parameters by a `-`
 
 The actual parsing is done by [scopt](https://github.com/scopt/scopt)
 
